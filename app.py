@@ -3,20 +3,52 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import matplotlib.patches as mpatches
-
-# Configuration de matplotlib et seaborn
-plt.style.use('seaborn-v0_8-darkgrid')
-sns.set_palette("husl")
-plt.rcParams['figure.figsize'] = (10, 6)
-plt.rcParams['font.size'] = 10
+from PIL import Image
+import os
 
 # Configuration de la page
 st.set_page_config(
     page_title="Dashboard RATP 2021",
-    page_icon="🚇",
+    page_icon="assets/RATP.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Couleurs RATP officielles
+COLORS_RATP = {
+    'bleu': '#100FAA',      # Bleu RATP
+    'vert': '#00C0AF',      # Vert RATP
+    'jaune': '#FFCD00',     # Jaune 
+    'rouge': '#DC143C',     # Rouge 
+    'metro': "#197972",     # Couleur métro graphiques
+    'rer': '#FF6B6B',       # Couleur RER graphiques
+    'noir': '#1D1D1B'       # Noir RATP
+}
+
+# Configuration de matplotlib et seaborn avec couleurs RATP
+plt.style.use('seaborn-v0_8-whitegrid')
+custom_palette = [COLORS_RATP['bleu'], COLORS_RATP['vert'], COLORS_RATP['jaune'], 
+                  COLORS_RATP['rouge'], COLORS_RATP['metro'], COLORS_RATP['rer']]
+sns.set_palette(custom_palette)
+plt.rcParams['figure.figsize'] = (10, 6)
+plt.rcParams['font.size'] = 10
+plt.rcParams['axes.labelcolor'] = COLORS_RATP['noir']
+plt.rcParams['text.color'] = COLORS_RATP['noir']
+plt.rcParams['xtick.color'] = COLORS_RATP['noir']
+plt.rcParams['ytick.color'] = COLORS_RATP['noir']
+
+# Fonction pour afficher le logo RATP
+def display_logo():
+    """Affiche le logo RATP dans la sidebar"""
+    logo_path = 'assets/logo_ratp.png'
+    if os.path.exists(logo_path):
+        try:
+            logo = Image.open(logo_path)
+            st.sidebar.image(logo, use_container_width=True)
+        except Exception as e:
+            st.sidebar.markdown("### RATP")
+    else:
+        st.sidebar.markdown("### RATP")
 
 # Fonction de chargement et préparation des données
 @st.cache_data
@@ -84,25 +116,27 @@ except Exception as e:
     st.error(f"Erreur lors du chargement des données : {e}")
     st.stop()
 
+# Afficher le logo RATP
+display_logo()
+
 # Sidebar avec navigation
-st.sidebar.title("🚇 Navigation")
+st.sidebar.markdown("---")
+st.sidebar.title("Navigation")
 page = st.sidebar.radio(
     "Choisir une page :",
-    ["📊 Analyse par station", "🚉 Analyse par ligne", "🗺️ Répartition géographique", "🔍 Exploration libre"]
+    ["Analyse par station", "Analyse par ligne", "Répartition géographique", "Exploration libre"]
 )
 
-st.sidebar.markdown("---")
-st.sidebar.info(f"**{len(df)}** stations\n\n**{df['Trafic'].sum():,.0f}** voyageurs total")
 
 # ========== PAGE 1 : ANALYSE PAR STATION ==========
-if page == "📊 Analyse par station":
-    st.title("📊 Analyse par station")
+if page == "Analyse par station":
+    st.title("Analyse par station")
     st.markdown("Explorez les détails d'une station et comparez-la aux moyennes du réseau.")
     
     col1, col2 = st.columns([1, 2])
     
     with col1:
-        st.subheader("🔍 Filtres")
+        st.subheader("Filtres")
         
         # Filtre réseau
         reseaux = ['Tous'] + sorted(df['Réseau'].unique().tolist())
@@ -122,7 +156,7 @@ if page == "📊 Analyse par station":
         station_data = df_filtre[df_filtre['Station'] == station_choisie].iloc[0]
     
     with col2:
-        st.subheader("📋 Fiche station")
+        st.subheader("Fiche station")
         
         # Affichage des informations
         info_col1, info_col2, info_col3 = st.columns(3)
@@ -170,7 +204,7 @@ if page == "📊 Analyse par station":
     rang_reseau = df_stats_sorted[df_stats_sorted['Station'] == station_choisie].index[0] + 1
     total_stations_reseau = len(df_stats)
     
-    st.subheader(f"📈 Comparaison avec le {reseau_label}")
+    st.subheader(f"Comparaison avec le {reseau_label}")
     
     comp_col1, comp_col2 = st.columns([1, 1])
     
@@ -190,29 +224,29 @@ if page == "📊 Analyse par station":
         
         categories = ['Station\nsélectionnée', 'Moyenne\nréseau', 'Médiane\nréseau']
         values = [station_data['Trafic'], trafic_moyen, trafic_median]
-        colors = ['#FF6B6B', '#4ECDC4', '#45B7D1']
+        colors = [COLORS_RATP['bleu'], COLORS_RATP['vert'], COLORS_RATP['jaune']]
         
-        bars = ax.bar(categories, values, color=colors, alpha=0.8, edgecolor='black', linewidth=1.2)
+        bars = ax.bar(categories, values, color=colors, alpha=0.85, edgecolor=COLORS_RATP['noir'], linewidth=1.5)
         
         # Ajouter les valeurs sur les barres
         for i, (bar, value) in enumerate(zip(bars, values)):
             height = bar.get_height()
             ax.text(bar.get_x() + bar.get_width()/2., height,
                    f'{value:,.0f}',
-                   ha='center', va='bottom', fontsize=10, fontweight='bold')
+                   ha='center', va='bottom', fontsize=11, fontweight='bold', color=COLORS_RATP['noir'])
         
         ax.set_ylabel('Trafic annuel', fontsize=12, fontweight='bold')
-        ax.set_title(f'Comparaison du trafic - {station_choisie}', fontsize=14, fontweight='bold', pad=20)
+        ax.set_title(f'Comparaison du trafic - {station_choisie}', fontsize=14, fontweight='bold', pad=20, color=COLORS_RATP['bleu'])
         ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{int(x):,}'))
-        ax.grid(axis='y', alpha=0.3, linestyle='--')
+        ax.grid(axis='y', alpha=0.3, linestyle='--', color=COLORS_RATP['noir'])
         
         plt.tight_layout()
         st.pyplot(fig)
         plt.close()
 
 # ========== PAGE 2 : ANALYSE PAR LIGNE ==========
-elif page == "🚉 Analyse par ligne":
-    st.title("🚉 Analyse par ligne")
+elif page == "Analyse par ligne":
+    st.title("Analyse par ligne")
     st.markdown("Comparez les performances des différentes lignes du réseau ferré RATP.")
     
     # Filtre par réseau
@@ -229,8 +263,8 @@ elif page == "🚉 Analyse par ligne":
     stats_lignes_filtered = stats_lignes_filtered.sort_values('Trafic_total', ascending=False)
     
     # Tableau récapitulatif
-    st.subheader("📋 Tableau récapitulatif par ligne")
-    
+    st.subheader("Tableau récapitulatif par ligne")
+
     # Formater le dataframe pour l'affichage
     df_display = stats_lignes_filtered.copy()
     df_display['Trafic_total'] = df_display['Trafic_total'].apply(lambda x: f"{x:,.0f}")
@@ -247,26 +281,28 @@ elif page == "🚉 Analyse par ligne":
     graph_col1, graph_col2 = st.columns(2)
     
     with graph_col1:
-        st.subheader("📊 Trafic total par ligne")
-        
+        st.subheader("Trafic total par ligne")
+
         fig, ax = plt.subplots(figsize=(12, 6))
         
         data_plot = stats_lignes_filtered.head(15).copy()
         
-        # Créer le graphique avec couleurs par réseau
-        colors = data_plot['Réseau'].map({'Métro': '#4ECDC4', 'RER': '#FF6B6B'})
-        bars = ax.bar(data_plot['Ligne'], data_plot['Trafic_total'], color=colors, alpha=0.8, edgecolor='black', linewidth=1)
+        # Créer le graphique avec couleurs par réseau (couleurs RATP)
+        colors = data_plot['Réseau'].map({'Métro': COLORS_RATP['bleu'], 'RER': COLORS_RATP['vert']})
+        bars = ax.bar(data_plot['Ligne'], data_plot['Trafic_total'], color=colors, alpha=0.85, 
+                     edgecolor=COLORS_RATP['noir'], linewidth=1.2)
         
         ax.set_xlabel('Ligne', fontsize=12, fontweight='bold')
         ax.set_ylabel('Trafic total', fontsize=12, fontweight='bold')
-        ax.set_title(f'Top 15 des lignes - Trafic total ({reseau_filter})', fontsize=14, fontweight='bold', pad=20)
+        ax.set_title(f'Top 15 des lignes - Trafic total ({reseau_filter})', fontsize=14, fontweight='bold', 
+                    pad=20, color=COLORS_RATP['bleu'])
         ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{int(x/1e6):.1f}M' if x >= 1e6 else f'{int(x/1e3):.0f}K'))
-        ax.grid(axis='y', alpha=0.3, linestyle='--')
+        ax.grid(axis='y', alpha=0.3, linestyle='--', color=COLORS_RATP['noir'])
         plt.xticks(rotation=45, ha='right')
         
-        # Légende
-        metro_patch = mpatches.Patch(color='#4ECDC4', label='Métro', alpha=0.8)
-        rer_patch = mpatches.Patch(color='#FF6B6B', label='RER', alpha=0.8)
+        # Légende avec couleurs RATP
+        metro_patch = mpatches.Patch(color=COLORS_RATP['bleu'], label='Métro', alpha=0.85)
+        rer_patch = mpatches.Patch(color=COLORS_RATP['vert'], label='RER', alpha=0.85)
         ax.legend(handles=[metro_patch, rer_patch], loc='upper right')
         
         plt.tight_layout()
@@ -274,26 +310,28 @@ elif page == "🚉 Analyse par ligne":
         plt.close()
     
     with graph_col2:
-        st.subheader("📊 Trafic moyen par station")
+        st.subheader("Trafic moyen par station")
         
         fig, ax = plt.subplots(figsize=(12, 6))
         
         data_plot = stats_lignes_filtered.head(15).copy()
         
-        # Créer le graphique avec couleurs par réseau
-        colors = data_plot['Réseau'].map({'Métro': '#45B7D1', 'RER': '#FFA07A'})
-        bars = ax.bar(data_plot['Ligne'], data_plot['Trafic_moyen_station'], color=colors, alpha=0.8, edgecolor='black', linewidth=1)
+        # Créer le graphique avec couleurs par réseau (couleurs RATP)
+        colors = data_plot['Réseau'].map({'Métro': COLORS_RATP['jaune'], 'RER': COLORS_RATP['rouge']})
+        bars = ax.bar(data_plot['Ligne'], data_plot['Trafic_moyen_station'], color=colors, alpha=0.85, 
+                     edgecolor=COLORS_RATP['noir'], linewidth=1.2)
         
         ax.set_xlabel('Ligne', fontsize=12, fontweight='bold')
         ax.set_ylabel('Trafic moyen/station', fontsize=12, fontweight='bold')
-        ax.set_title(f'Top 15 des lignes - Trafic moyen/station ({reseau_filter})', fontsize=14, fontweight='bold', pad=20)
+        ax.set_title(f'Top 15 des lignes - Trafic moyen/station ({reseau_filter})', fontsize=14, fontweight='bold', 
+                    pad=20, color=COLORS_RATP['bleu'])
         ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{int(x/1e6):.1f}M' if x >= 1e6 else f'{int(x/1e3):.0f}K'))
-        ax.grid(axis='y', alpha=0.3, linestyle='--')
+        ax.grid(axis='y', alpha=0.3, linestyle='--', color=COLORS_RATP['noir'])
         plt.xticks(rotation=45, ha='right')
         
-        # Légende
-        metro_patch = mpatches.Patch(color='#45B7D1', label='Métro', alpha=0.8)
-        rer_patch = mpatches.Patch(color='#FFA07A', label='RER', alpha=0.8)
+        # Légende avec couleurs RATP
+        metro_patch = mpatches.Patch(color=COLORS_RATP['jaune'], label='Métro', alpha=0.85)
+        rer_patch = mpatches.Patch(color=COLORS_RATP['rouge'], label='RER', alpha=0.85)
         ax.legend(handles=[metro_patch, rer_patch], loc='upper right')
         
         plt.tight_layout()
@@ -303,7 +341,7 @@ elif page == "🚉 Analyse par ligne":
     st.markdown("---")
     
     # Graphique camembert
-    st.subheader("🥧 Répartition du trafic par ligne")
+    st.subheader("Répartition du trafic par ligne")
     
     pie_col1, pie_col2 = st.columns([2, 1])
     
@@ -325,8 +363,8 @@ elif page == "🚉 Analyse par ligne":
         
         fig, ax = plt.subplots(figsize=(10, 8))
         
-        # Couleurs personnalisées
-        color_map = {'Métro': '#4ECDC4', 'RER': '#FF6B6B', 'Mixte': '#95A5A6'}
+        # Couleurs personnalisées RATP
+        color_map = {'Métro': COLORS_RATP['bleu'], 'RER': COLORS_RATP['vert'], 'Mixte': '#95A5A6'}
         colors = [color_map.get(r, '#95A5A6') for r in stats_for_pie['Réseau']]
         
         wedges, texts, autotexts = ax.pie(
@@ -335,17 +373,19 @@ elif page == "🚉 Analyse par ligne":
             autopct='%1.1f%%',
             startangle=90,
             colors=colors,
-            textprops={'fontsize': 10, 'weight': 'bold'}
+            textprops={'fontsize': 10, 'weight': 'bold', 'color': COLORS_RATP['noir']},
+            wedgeprops={'edgecolor': 'white', 'linewidth': 2}
         )
         
-        ax.set_title(f'Part du trafic total par ligne (Top {top_n})', fontsize=14, fontweight='bold', pad=20)
+        ax.set_title(f'Part du trafic total par ligne (Top {top_n})', fontsize=14, fontweight='bold', 
+                    pad=20, color=COLORS_RATP['bleu'])
         
         plt.tight_layout()
         st.pyplot(fig)
         plt.close()
     
     with pie_col2:
-        st.markdown("### 📌 Insights")
+        st.markdown("### Insights")
         
         ligne_max = stats_lignes_filtered.iloc[0]
         st.success(f"**Ligne la plus fréquentée :** {ligne_max['Ligne']}\n\n"
@@ -358,8 +398,8 @@ elif page == "🚉 Analyse par ligne":
         st.metric("Nombre de lignes", total_lignes)
 
 # ========== PAGE 3 : RÉPARTITION GÉOGRAPHIQUE ==========
-elif page == "🗺️ Répartition géographique":
-    st.title("🗺️ Répartition géographique")
+elif page == "Répartition géographique":
+    st.title("Répartition géographique")
     st.markdown("Analysez la distribution géographique du trafic RATP.")
     
     # Choix du mode d'analyse
@@ -372,8 +412,8 @@ elif page == "🗺️ Répartition géographique":
     st.markdown("---")
     
     if mode == "Par arrondissement (Paris)":
-        st.subheader("📍 Trafic par arrondissement parisien")
-        
+        st.subheader("Trafic par arrondissement parisien")
+
         # Filtrer Paris uniquement
         df_paris = df[df['Ville'] == 'Paris'].copy()
         df_paris = df_paris[df_paris['Arrondissement pour Paris'] != ''].copy()
@@ -388,15 +428,19 @@ elif page == "🗺️ Répartition géographique":
         with col1:
             fig, ax = plt.subplots(figsize=(12, 6))
             
+            # Palette de bleus pour les arrondissements (couleurs RATP)
+            n_arr = len(arr_stats)
+            colors_arr = sns.light_palette(COLORS_RATP['bleu'], n_colors=n_arr, reverse=True)
+            
             bars = ax.bar(arr_stats['Arrondissement'], arr_stats['Trafic_total'], 
-                         color=sns.color_palette('Blues_r', len(arr_stats)), 
-                         alpha=0.8, edgecolor='black', linewidth=1)
+                         color=colors_arr, alpha=0.85, edgecolor=COLORS_RATP['noir'], linewidth=1.2)
             
             ax.set_xlabel('Arrondissement', fontsize=12, fontweight='bold')
             ax.set_ylabel('Trafic total', fontsize=12, fontweight='bold')
-            ax.set_title('Trafic total par arrondissement de Paris', fontsize=14, fontweight='bold', pad=20)
+            ax.set_title('Trafic total par arrondissement de Paris', fontsize=14, fontweight='bold', 
+                        pad=20, color=COLORS_RATP['bleu'])
             ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{int(x/1e6):.1f}M' if x >= 1e6 else f'{int(x/1e3):.0f}K'))
-            ax.grid(axis='y', alpha=0.3, linestyle='--')
+            ax.grid(axis='y', alpha=0.3, linestyle='--', color=COLORS_RATP['noir'])
             plt.xticks(rotation=45, ha='right')
             
             plt.tight_layout()
@@ -404,7 +448,7 @@ elif page == "🗺️ Répartition géographique":
             plt.close()
         
         with col2:
-            st.markdown("### 🏆 Top 5 arrondissements")
+            st.markdown("### Top 5 arrondissements")
             for idx, row in arr_stats.head(5).iterrows():
                 st.markdown(f"**{row['Arrondissement']}** : {row['Trafic_total']:,.0f}")
             
@@ -413,7 +457,7 @@ elif page == "🗺️ Répartition géographique":
             st.metric("Trafic total Paris", f"{arr_stats['Trafic_total'].sum():,.0f}")
     
     elif mode == "Par ville":
-        st.subheader("🏙️ Trafic par ville")
+        st.subheader("Trafic par ville")
         
         ville_stats = df.groupby('Ville')['Trafic'].sum().reset_index()
         ville_stats.columns = ['Ville', 'Trafic_total']
@@ -428,15 +472,19 @@ elif page == "🗺️ Répartition géographique":
         with col1:
             fig, ax = plt.subplots(figsize=(12, 10))
             
+            # Palette de verts pour les villes (couleurs RATP)
+            n_villes = len(ville_stats_top)
+            colors_villes = sns.light_palette(COLORS_RATP['vert'], n_colors=n_villes, reverse=True)
+            
             bars = ax.barh(ville_stats_top['Ville'], ville_stats_top['Trafic_total'],
-                          color=sns.color_palette('viridis', len(ville_stats_top)),
-                          alpha=0.8, edgecolor='black', linewidth=1)
+                          color=colors_villes, alpha=0.85, edgecolor=COLORS_RATP['noir'], linewidth=1.2)
             
             ax.set_xlabel('Trafic total', fontsize=12, fontweight='bold')
             ax.set_ylabel('Ville', fontsize=12, fontweight='bold')
-            ax.set_title(f'Top {top_n_villes} des villes par trafic', fontsize=14, fontweight='bold', pad=20)
+            ax.set_title(f'Top {top_n_villes} des villes par trafic', fontsize=14, fontweight='bold', 
+                        pad=20, color=COLORS_RATP['bleu'])
             ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{int(x/1e6):.1f}M' if x >= 1e6 else f'{int(x/1e3):.0f}K'))
-            ax.grid(axis='x', alpha=0.3, linestyle='--')
+            ax.grid(axis='x', alpha=0.3, linestyle='--', color=COLORS_RATP['noir'])
             ax.invert_yaxis()  # Pour avoir la plus haute valeur en haut
             
             plt.tight_layout()
@@ -444,7 +492,7 @@ elif page == "🗺️ Répartition géographique":
             plt.close()
         
         with col2:
-            st.markdown("### 🏆 Top 5 villes")
+            st.markdown("### Top 5 villes")
             for idx, row in ville_stats.head(5).iterrows():
                 st.markdown(f"**{row['Ville']}** : {row['Trafic_total']:,.0f}")
             
@@ -452,7 +500,7 @@ elif page == "🗺️ Répartition géographique":
             st.metric("Nombre total de villes", len(ville_stats))
     
     else:  # Par réseau/zone
-        st.subheader("🚇 Répartition par réseau et zone")
+        st.subheader("Répartition par réseau et zone")
         
         col1, col2 = st.columns(2)
         
@@ -463,7 +511,8 @@ elif page == "🗺️ Répartition géographique":
             
             fig, ax = plt.subplots(figsize=(8, 8))
             
-            colors_reseau = ['#4ECDC4' if r == 'Métro' else '#FF6B6B' for r in reseau_stats['Réseau']]
+            # Couleurs RATP pour réseau
+            colors_reseau = [COLORS_RATP['bleu'] if r == 'Métro' else COLORS_RATP['vert'] for r in reseau_stats['Réseau']]
             
             wedges, texts, autotexts = ax.pie(
                 reseau_stats['Trafic_total'],
@@ -471,10 +520,12 @@ elif page == "🗺️ Répartition géographique":
                 autopct=lambda pct: f'{pct:.1f}%\n({int(pct/100*reseau_stats["Trafic_total"].sum()):,})',
                 startangle=90,
                 colors=colors_reseau,
-                textprops={'fontsize': 11, 'weight': 'bold'}
+                textprops={'fontsize': 11, 'weight': 'bold', 'color': 'white'},
+                wedgeprops={'edgecolor': 'white', 'linewidth': 3}
             )
             
-            ax.set_title('Répartition du trafic par réseau', fontsize=14, fontweight='bold', pad=20)
+            ax.set_title('Répartition du trafic par réseau', fontsize=14, fontweight='bold', 
+                        pad=20, color=COLORS_RATP['bleu'])
             
             plt.tight_layout()
             st.pyplot(fig)
@@ -488,7 +539,8 @@ elif page == "🗺️ Répartition géographique":
             
             fig, ax = plt.subplots(figsize=(8, 8))
             
-            colors_zone = ['#E74C3C' if z == 'Paris' else '#3498DB' for z in zone_stats['Zone']]
+            # Couleurs RATP pour zones
+            colors_zone = [COLORS_RATP['jaune'] if z == 'Paris' else COLORS_RATP['rouge'] for z in zone_stats['Zone']]
             
             wedges, texts, autotexts = ax.pie(
                 zone_stats['Trafic_total'],
@@ -496,10 +548,12 @@ elif page == "🗺️ Répartition géographique":
                 autopct=lambda pct: f'{pct:.1f}%\n({int(pct/100*zone_stats["Trafic_total"].sum()):,})',
                 startangle=90,
                 colors=colors_zone,
-                textprops={'fontsize': 11, 'weight': 'bold'}
+                textprops={'fontsize': 11, 'weight': 'bold', 'color': 'white'},
+                wedgeprops={'edgecolor': 'white', 'linewidth': 3}
             )
             
-            ax.set_title('Répartition du trafic Paris vs Banlieue', fontsize=14, fontweight='bold', pad=20)
+            ax.set_title('Répartition du trafic Paris vs Banlieue', fontsize=14, fontweight='bold', 
+                        pad=20, color=COLORS_RATP['bleu'])
             
             plt.tight_layout()
             st.pyplot(fig)
@@ -508,7 +562,7 @@ elif page == "🗺️ Répartition géographique":
         st.markdown("---")
         
         # Tableau croisé
-        st.subheader("📊 Tableau croisé Réseau × Zone")
+        st.subheader("Tableau croisé Réseau × Zone")
         
         cross_stats = df.groupby(['Réseau', 'Zone'])['Trafic'].sum().reset_index()
         pivot_table = cross_stats.pivot(index='Réseau', columns='Zone', values='Trafic').fillna(0)
@@ -517,13 +571,13 @@ elif page == "🗺️ Répartition géographique":
 
 # ========== PAGE 4 : EXPLORATION LIBRE ==========
 else:  # Exploration libre
-    st.title("🔍 Exploration libre des données")
+    st.title("Exploration libre des données")
     st.markdown("Filtrez et explorez les données selon vos critères.")
     
     # Sidebar de filtres
     with st.sidebar:
         st.markdown("---")
-        st.subheader("🔧 Filtres")
+        st.subheader("Filtres")
         
         # Filtre réseau
         reseaux_selected = st.multiselect(
@@ -565,8 +619,8 @@ else:  # Exploration libre
         )
         
         # Recherche textuelle
-        search_station = st.text_input("🔎 Rechercher une station")
-    
+        search_station = st.text_input("Rechercher une station")
+
     # Appliquer les filtres
     df_filtered = df.copy()
     
@@ -592,7 +646,7 @@ else:  # Exploration libre
         ]
     
     # Affichage des résultats
-    st.subheader(f"📊 Résultats : {len(df_filtered)} stations")
+    st.subheader(f"Résultats : {len(df_filtered)} stations")
     
     if len(df_filtered) > 0:
         # Métriques
@@ -623,20 +677,22 @@ else:  # Exploration libre
             
             fig, ax = plt.subplots(figsize=(12, 10))
             
-            # Couleurs par réseau
-            colors = df_top20['Réseau'].map({'Métro': '#4ECDC4', 'RER': '#FF6B6B'})
-            bars = ax.barh(df_top20['Station'], df_top20['Trafic'], color=colors, alpha=0.8, edgecolor='black', linewidth=1)
+            # Couleurs par réseau (couleurs RATP)
+            colors = df_top20['Réseau'].map({'Métro': COLORS_RATP['bleu'], 'RER': COLORS_RATP['vert']})
+            bars = ax.barh(df_top20['Station'], df_top20['Trafic'], color=colors, alpha=0.85, 
+                          edgecolor=COLORS_RATP['noir'], linewidth=1.2)
             
             ax.set_xlabel('Trafic annuel', fontsize=12, fontweight='bold')
             ax.set_ylabel('Station', fontsize=12, fontweight='bold')
-            ax.set_title('Top 20 des stations (données filtrées)', fontsize=14, fontweight='bold', pad=20)
+            ax.set_title('Top 20 des stations (données filtrées)', fontsize=14, fontweight='bold', 
+                        pad=20, color=COLORS_RATP['bleu'])
             ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{int(x/1e6):.1f}M' if x >= 1e6 else f'{int(x/1e3):.0f}K'))
-            ax.grid(axis='x', alpha=0.3, linestyle='--')
+            ax.grid(axis='x', alpha=0.3, linestyle='--', color=COLORS_RATP['noir'])
             ax.invert_yaxis()
             
-            # Légende
-            metro_patch = mpatches.Patch(color='#4ECDC4', label='Métro', alpha=0.8)
-            rer_patch = mpatches.Patch(color='#FF6B6B', label='RER', alpha=0.8)
+            # Légende avec couleurs RATP
+            metro_patch = mpatches.Patch(color=COLORS_RATP['bleu'], label='Métro', alpha=0.85)
+            rer_patch = mpatches.Patch(color=COLORS_RATP['vert'], label='RER', alpha=0.85)
             ax.legend(handles=[metro_patch, rer_patch], loc='lower right')
             
             plt.tight_layout()
@@ -646,21 +702,24 @@ else:  # Exploration libre
         else:  # Histogramme
             fig, ax = plt.subplots(figsize=(12, 6))
             
-            # Créer un histogramme avec seaborn pour plus de style
+            # Créer un histogramme avec couleurs RATP
             if 'Réseau' in df_filtered.columns and len(df_filtered['Réseau'].unique()) > 1:
                 for reseau in df_filtered['Réseau'].unique():
                     data = df_filtered[df_filtered['Réseau'] == reseau]['Trafic']
-                    color = '#4ECDC4' if reseau == 'Métro' else '#FF6B6B'
-                    ax.hist(data, bins=30, alpha=0.6, label=reseau, color=color, edgecolor='black', linewidth=0.5)
+                    color = COLORS_RATP['bleu'] if reseau == 'Métro' else COLORS_RATP['vert']
+                    ax.hist(data, bins=30, alpha=0.7, label=reseau, color=color, 
+                           edgecolor=COLORS_RATP['noir'], linewidth=0.8)
                 ax.legend(loc='upper right', fontsize=11)
             else:
-                ax.hist(df_filtered['Trafic'], bins=30, alpha=0.7, color='#4ECDC4', edgecolor='black', linewidth=0.5)
+                ax.hist(df_filtered['Trafic'], bins=30, alpha=0.75, color=COLORS_RATP['bleu'], 
+                       edgecolor=COLORS_RATP['noir'], linewidth=0.8)
             
             ax.set_xlabel('Trafic annuel', fontsize=12, fontweight='bold')
             ax.set_ylabel('Nombre de stations', fontsize=12, fontweight='bold')
-            ax.set_title('Distribution du trafic (données filtrées)', fontsize=14, fontweight='bold', pad=20)
+            ax.set_title('Distribution du trafic (données filtrées)', fontsize=14, fontweight='bold', 
+                        pad=20, color=COLORS_RATP['bleu'])
             ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{int(x/1e6):.1f}M' if x >= 1e6 else f'{int(x/1e3):.0f}K'))
-            ax.grid(axis='y', alpha=0.3, linestyle='--')
+            ax.grid(axis='y', alpha=0.3, linestyle='--', color=COLORS_RATP['noir'])
             
             plt.tight_layout()
             st.pyplot(fig)
@@ -669,7 +728,7 @@ else:  # Exploration libre
         st.markdown("---")
         
         # Tableau de données
-        st.subheader("📋 Données filtrées")
+        st.subheader("Données filtrées")
         
         # Colonnes à afficher
         colonnes_affichage = ['Rang', 'Réseau', 'Station', 'Trafic', 'Lignes', 'Ville', 'Arrondissement pour Paris']
@@ -682,7 +741,7 @@ else:  # Exploration libre
         
         # Export CSV
         st.markdown("---")
-        st.subheader("💾 Export des données")
+        st.subheader(" Export des données")
         
         csv = df_display.to_csv(index=False, sep=';').encode('utf-8')
         
